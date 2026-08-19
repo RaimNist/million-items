@@ -1,8 +1,72 @@
-import express from 'express';
+import { app } from './app.js';
 
-const app = express();
-const port = 3000;
+const DEFAULT_PORT = 3000;
+const HOST = '127.0.0.1';
+const SHUTDOWN_TIMEOUT_MS = 10_000;
 
-app.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
+const resolvePort = (value: string | undefined): number => {
+  if (value === undefined) {
+    return DEFAULT_PORT;
+  }
+
+  if (!/^\d+$/.test(value)) {
+    throw new Error('PORT must be an integer between 1 and 65535');
+  }
+
+  const port = Number(value);
+
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) {
+    throw new Error('PORT must be an integer between 1 and 65535');
+  }
+
+  return port;
+};
+
+const port = resolvePort(process.env.PORT);
+
+const server = app.listen(port, HOST);
+
+server.once('listening', () => {
+  console.log(`Server is listening on http://${HOST}:${port}`);
 });
+
+server.once('error', (error) => {
+  console.error('Failed to start HTTP server', error);
+  process.exitCode = 1;
+});
+
+let isShuttingDown = false;
+
+const shutdown = (signal: NodeJS.Signals): void => {
+  if (isShuttingDown) {
+    return;
+  }
+
+  isShuttingDown = true;
+
+  console.log(`${signal} received. Starting graceful shutdown`);
+
+  const shutdownTimeout = setTimeout(() => {
+    console.error('Graceful shutdown timed out. Closing remaining connections');
+
+    server.closeAllConnections();
+    process.exitCode = 1;
+  }, SHUTDOWN_TIMEOUT_MS);
+
+  shutdownTimeout.unref();
+
+  server.close((error) => {
+    clearTimeout(shutdownTimeout);
+
+    if (error) {
+      console.error('Failed to close HTTP server', error);
+      process.exitCode = 1;
+      return;
+    }
+
+    console.log('HTTP server closed');
+  });
+};
+
+process.once('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);

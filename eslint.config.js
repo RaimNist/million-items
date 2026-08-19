@@ -20,12 +20,19 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
-
   {
     files: ['server/src/**/*.ts'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
     languageOptions: {
       globals: globals.node,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+        },
+      ],
     },
   },
 ]);
