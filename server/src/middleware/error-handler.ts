@@ -1,35 +1,44 @@
 import type { ErrorRequestHandler } from 'express';
 
-type ErrorWithStatus = Error & {
-  status: number;
-};
+import { HttpError } from '../errors/http-error.js';
+import { ItemsServiceError } from '../services/items.service.js';
 
-const hasHttpStatus = (error: unknown): error is ErrorWithStatus => {
-  if (!(error instanceof Error) || !('status' in error)) {
-    return false;
-  }
-
-  return typeof error.status === 'number' && error.status >= 400 && error.status < 500;
-};
-
-export const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
-  if (hasHttpStatus(error)) {
-    const message = error.status === 413 ? 'Request body is too large' : 'Invalid request body';
-
-    response.status(error.status).json({
-      error: {
-        message,
-      },
+export const errorHandler: ErrorRequestHandler = (
+  error,
+  _request,
+  response,
+  _next,
+) => {
+  if (error instanceof HttpError) {
+    response.status(error.statusCode).json({
+      error: error.message,
     });
 
     return;
   }
 
+  if (error instanceof ItemsServiceError) {
+    switch (error.code) {
+      case 'ITEM_ALREADY_EXISTS':
+        response.status(409).json({
+          error: error.message,
+        });
+        return;
+
+      case 'INVALID_ID':
+      case 'INVALID_LIMIT':
+      case 'INVALID_SEARCH':
+      case 'INVALID_CURSOR':
+        response.status(400).json({
+          error: error.message,
+        });
+        return;
+    }
+  }
+
   console.error(error);
 
   response.status(500).json({
-    error: {
-      message: 'Internal server error',
-    },
+    error: 'Internal server error',
   });
 };
