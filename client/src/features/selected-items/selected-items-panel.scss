@@ -1,0 +1,70 @@
+.selected-items-panel {
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    &--dragging {
+      position: relative;
+      z-index: 1;
+      opacity: 0.6;
+    }
+  }
+
+  &__drag-handle {
+    flex: 0 0 auto;
+    padding: 4px 7px;
+    border: 0;
+    background: transparent;
+    color: #667085;
+    font: inherit;
+    font-size: 18px;
+    line-height: 1;
+    cursor: grab;
+    touch-action: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #667085;
+      outline-offset: 2px;
+    }
+  }
+
+  &__id {
+    flex: 1;
+  }
+
+  &__remove {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #344054;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: #f2f4f7;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #667085;
+      outline-offset: 2px;
+    }
+  }
+}

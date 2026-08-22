@@ -1,0 +1,22 @@
+[Unit]
+Description=Million Items API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/million-items/server
+
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+ExecStart=/usr/bin/node /var/www/million-items/server/dist/server.js
+
+Restart=on-failure
+RestartSec=3
+
+KillSignal=SIGTERM
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target
