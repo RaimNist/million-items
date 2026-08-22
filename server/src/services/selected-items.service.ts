@@ -284,5 +284,7 @@ export const reorderSelectedItems = (ids: number[]): number[] => {
     return reorderedId;
   });
 
+  itemsState.selectedIdsVersion += 1;
+
   return [...itemsState.selectedIds];
 };
