@@ -74,23 +74,20 @@ export const fetchSelectedItems = createAsyncThunk<
   SelectedItemsPage,
   FetchSelectedItemsArgs,
   { rejectValue: string }
->(
-  'selectedItems/fetchSelectedItems',
-  async ({ search, cursor }, { rejectWithValue, signal }) => {
-    try {
-      return await getSelectedItems(
-        {
-          search,
-          cursor,
-          limit: PAGE_LIMIT,
-        },
-        signal,
-      );
-    } catch (error) {
-      return rejectWithValue(getRequestError(error));
-    }
-  },
-);
+>('selectedItems/fetchSelectedItems', async ({ search, cursor }, { rejectWithValue, signal }) => {
+  try {
+    return await getSelectedItems(
+      {
+        search,
+        cursor,
+        limit: PAGE_LIMIT,
+      },
+      signal,
+    );
+  } catch (error) {
+    return rejectWithValue(getRequestError(error));
+  }
+});
 
 export const selectItem = createAsyncThunk<number, number, { rejectValue: string }>(
   'selectedItems/selectItem',

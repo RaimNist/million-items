@@ -76,10 +76,7 @@ const parseSearch = (value: unknown): string | undefined => {
 export class SelectedItemsController {
   constructor(private readonly dataRequestQueue: DataRequestQueue) {}
 
-  getItems = async (
-    request: Request,
-    response: Response,
-  ): Promise<void> => {
+  getItems = async (request: Request, response: Response): Promise<void> => {
     const limit = parseLimit(request.query.limit);
     const cursor = parseCursor(request.query.cursor);
     const search = parseSearch(request.query.search);

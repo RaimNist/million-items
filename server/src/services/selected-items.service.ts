@@ -84,9 +84,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === 'object' && value !== null;
 };
 
-const isCursorPayload = (
-  value: unknown,
-): value is SelectedItemsCursorPayload => {
+const isCursorPayload = (value: unknown): value is SelectedItemsCursorPayload => {
   if (!isRecord(value)) {
     return false;
   }
@@ -100,10 +98,7 @@ const isCursorPayload = (
   );
 };
 
-const decodeCursor = (
-  cursor: string,
-  search: string,
-): SelectedItemsCursorPayload => {
+const decodeCursor = (cursor: string, search: string): SelectedItemsCursorPayload => {
   let parsed: unknown;
 
   try {
@@ -124,25 +119,17 @@ const decodeCursor = (
   }
 
   if (parsed.version !== itemsState.selectedIdsVersion) {
-    throw new SelectedItemsServiceError(
-      'INVALID_CURSOR',
-      'Cursor is stale',
-    );
+    throw new SelectedItemsServiceError('INVALID_CURSOR', 'Cursor is stale');
   }
 
   if (parsed.position < 0 || parsed.position > itemsState.selectedIds.length) {
-    throw new SelectedItemsServiceError(
-      'INVALID_CURSOR',
-      'Cursor position is invalid',
-    );
+    throw new SelectedItemsServiceError('INVALID_CURSOR', 'Cursor position is invalid');
   }
 
   return parsed;
 };
 
-export const getSelectedItems = (
-  params: GetSelectedItemsParams = {},
-): SelectedItemsPage => {
+export const getSelectedItems = (params: GetSelectedItemsParams = {}): SelectedItemsPage => {
   const limit = validateLimit(params.limit ?? DEFAULT_SELECTED_ITEMS_LIMIT);
   const search = validateSearch(params.search ?? '');
 
@@ -198,10 +185,7 @@ export const getSelectedItems = (
 
 export const selectItem = (id: number): number => {
   if (!itemExists(id)) {
-    throw new SelectedItemsServiceError(
-      'ITEM_NOT_FOUND',
-      `Item with ID ${id} does not exist`,
-    );
+    throw new SelectedItemsServiceError('ITEM_NOT_FOUND', `Item with ID ${id} does not exist`);
   }
 
   if (itemsState.selectedIdsSet.has(id)) {
@@ -219,10 +203,7 @@ export const selectItem = (id: number): number => {
 
 export const removeSelectedItem = (id: number): number => {
   if (!itemsState.selectedIdsSet.has(id)) {
-    throw new SelectedItemsServiceError(
-      'ITEM_NOT_SELECTED',
-      `Item with ID ${id} is not selected`,
-    );
+    throw new SelectedItemsServiceError('ITEM_NOT_SELECTED', `Item with ID ${id} is not selected`);
   }
 
   const index = itemsState.selectedIds.indexOf(id);
