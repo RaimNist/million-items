@@ -150,9 +150,7 @@ export function AvailableItemsPanel() {
             value={newItemId}
             placeholder="Введите произвольный ID"
             aria-invalid={validationError !== null}
-            aria-describedby={
-              validationError ? 'new-item-validation-error' : undefined
-            }
+            aria-describedby={validationError ? 'new-item-validation-error' : undefined}
             onChange={(event) => {
               setNewItemId(event.target.value);
 
@@ -169,11 +167,7 @@ export function AvailableItemsPanel() {
       </form>
 
       {validationError ? (
-        <p
-          id="new-item-validation-error"
-          className="items-panel__error"
-          role="alert"
-        >
+        <p id="new-item-validation-error" className="items-panel__error" role="alert">
           {validationError}
         </p>
       ) : null}
@@ -196,15 +190,21 @@ export function AvailableItemsPanel() {
         </p>
       ) : null}
 
-      {isInitialLoading ? <p className="items-panel__status" role="status" aria-live="polite">
-        Загрузка...
-      </p> : null}
+      {isInitialLoading ? (
+        <p className="items-panel__status" role="status" aria-live="polite">
+          Загрузка...
+        </p>
+      ) : null}
 
       {!isInitialLoading && items.length === 0 && !listError ? (
         <p className="items-panel__status">Элементы не найдены</p>
       ) : null}
 
-      <div className="items-panel__scroll" ref={scrollContainerRef} aria-busy={listStatus === 'loading'}>
+      <div
+        className="items-panel__scroll"
+        ref={scrollContainerRef}
+        aria-busy={listStatus === 'loading'}
+      >
         <ul className="items-panel__list">
           {items.map((id) => (
             <li className="items-panel__item" key={id}>
@@ -225,21 +225,13 @@ export function AvailableItemsPanel() {
         </ul>
 
         {isLoadingMore ? (
-          <p
-            className="items-panel__loading-more"
-            role="status"
-            aria-live="polite"
-          >
+          <p className="items-panel__loading-more" role="status" aria-live="polite">
             Загрузка...
           </p>
         ) : null}
 
         {hasMore && nextCursor ? (
-          <div
-            className="items-panel__sentinel"
-            ref={loadMoreRef}
-            aria-hidden="true"
-          />
+          <div className="items-panel__sentinel" ref={loadMoreRef} aria-hidden="true" />
         ) : null}
       </div>
     </section>

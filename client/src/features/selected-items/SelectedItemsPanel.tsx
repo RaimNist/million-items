@@ -34,9 +34,7 @@ const SEARCH_DELAY_MS = 300;
 export function SelectedItemsPanel() {
   const dispatch = useAppDispatch();
 
-  const { search: availableItemsSearch } = useAppSelector(
-    (state) => state.items,
-  );
+  const { search: availableItemsSearch } = useAppSelector((state) => state.items);
 
   const {
     items,
@@ -131,50 +129,37 @@ export function SelectedItemsPanel() {
 
     dispatch(applySelectedItemsOrder(reorderedItems));
 
-    const result = await dispatch(
-      reorderSelectedItems(reorderedItems),
-    );
+    const result = await dispatch(reorderSelectedItems(reorderedItems));
 
     if (!reorderSelectedItems.fulfilled.match(result)) {
       dispatch(applySelectedItemsOrder(previousItems));
     }
   };
 
-  const isInitialLoading =
-    listStatus === 'loading' && items.length === 0;
+  const isInitialLoading = listStatus === 'loading' && items.length === 0;
 
-  const isLoadingMore =
-    listStatus === 'loading' && items.length > 0;
+  const isLoadingMore = listStatus === 'loading' && items.length > 0;
 
-  const isChanging =
-    removeStatus === 'loading' ||
-    reorderStatus === 'loading';
+  const isChanging = removeStatus === 'loading' || reorderStatus === 'loading';
 
-  const { scrollContainerRef, loadMoreRef } =
-    useInfiniteScroll({
-      hasMore: hasMore && nextCursor !== null,
-      isLoading: listStatus === 'loading',
-      onLoadMore: handleLoadMore,
-    });
+  const { scrollContainerRef, loadMoreRef } = useInfiniteScroll({
+    hasMore: hasMore && nextCursor !== null,
+    isLoading: listStatus === 'loading',
+    onLoadMore: handleLoadMore,
+  });
 
   return (
     <section className="items-panel selected-items-panel">
       <div className="items-panel__header">
         <div>
-          <h2 className="items-panel__title">
-            Выбранные элементы
-          </h2>
+          <h2 className="items-panel__title">Выбранные элементы</h2>
 
-          <p className="items-panel__description">
-            Выбрано: {totalCount}
-          </p>
+          <p className="items-panel__description">Выбрано: {totalCount}</p>
         </div>
       </div>
 
       <label className="items-panel__field">
-        <span className="items-panel__label">
-          Фильтр по ID
-        </span>
+        <span className="items-panel__label">Фильтр по ID</span>
 
         <input
           className="items-panel__input"
@@ -182,9 +167,7 @@ export function SelectedItemsPanel() {
           value={search}
           placeholder="Например, 123"
           onChange={(event) => {
-            dispatch(
-              setSelectedItemsSearch(event.target.value),
-            );
+            dispatch(setSelectedItemsSearch(event.target.value));
           }}
         />
       </label>
@@ -208,18 +191,12 @@ export function SelectedItemsPanel() {
       ) : null}
 
       {isInitialLoading ? (
-        <p
-          className="items-panel__status"
-          role="status"
-          aria-live="polite"
-        >
+        <p className="items-panel__status" role="status" aria-live="polite">
           Загрузка...
         </p>
       ) : null}
 
-      {!isInitialLoading &&
-      items.length === 0 &&
-      !listError ? (
+      {!isInitialLoading && items.length === 0 && !listError ? (
         <p className="items-panel__status">
           {totalCount === 0 && search === ''
             ? 'Выбранных элементов пока нет'
@@ -239,10 +216,7 @@ export function SelectedItemsPanel() {
           ref={scrollContainerRef}
           aria-busy={listStatus === 'loading'}
         >
-          <SortableContext
-            items={items}
-            strategy={verticalListSortingStrategy}
-          >
+          <SortableContext items={items} strategy={verticalListSortingStrategy}>
             <ul className="items-panel__list">
               {items.map((id) => (
                 <SortableSelectedItem
@@ -258,21 +232,13 @@ export function SelectedItemsPanel() {
           </SortableContext>
 
           {isLoadingMore ? (
-            <p
-              className="items-panel__loading-more"
-              role="status"
-              aria-live="polite"
-            >
+            <p className="items-panel__loading-more" role="status" aria-live="polite">
               Загрузка...
             </p>
           ) : null}
 
           {hasMore && nextCursor ? (
-            <div
-              className="items-panel__sentinel"
-              ref={loadMoreRef}
-              aria-hidden="true"
-            />
+            <div className="items-panel__sentinel" ref={loadMoreRef} aria-hidden="true" />
           ) : null}
         </div>
       </DndContext>

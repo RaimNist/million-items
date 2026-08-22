@@ -6,11 +6,7 @@ interface UseInfiniteScrollParams {
   onLoadMore: () => void;
 }
 
-export const useInfiniteScroll = ({
-  hasMore,
-  isLoading,
-  onLoadMore,
-}: UseInfiniteScrollParams) => {
+export const useInfiniteScroll = ({ hasMore, isLoading, onLoadMore }: UseInfiniteScrollParams) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
