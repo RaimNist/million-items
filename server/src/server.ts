@@ -1,4 +1,6 @@
-import { app } from './app.js';
+import { createApp } from './app.js';
+import { CreateItemQueue } from './queues/create-item-queue.js';
+import { DataRequestQueue } from './queues/data-request-queue.js';
 
 const DEFAULT_PORT = 3000;
 const HOST = '127.0.0.1';
@@ -21,6 +23,14 @@ const resolvePort = (value: string | undefined): number => {
 
   return port;
 };
+
+const dataRequestQueue = new DataRequestQueue();
+const createItemQueue = new CreateItemQueue();
+
+const app = createApp({
+  dataRequestQueue,
+  createItemQueue,
+});
 
 const port = resolvePort(process.env.PORT);
 
@@ -45,6 +55,9 @@ const shutdown = (signal: NodeJS.Signals): void => {
   isShuttingDown = true;
 
   console.log(`${signal} received. Starting graceful shutdown`);
+
+  dataRequestQueue.shutdown();
+  createItemQueue.shutdown();
 
   const shutdownTimeout = setTimeout(() => {
     console.error('Graceful shutdown timed out. Closing remaining connections');
