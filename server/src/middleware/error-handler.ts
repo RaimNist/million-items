@@ -48,6 +48,9 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, _ne
         return;
 
       case 'INVALID_SELECTED_ORDER':
+      case 'INVALID_LIMIT':
+      case 'INVALID_SEARCH':
+      case 'INVALID_CURSOR':
         response.status(400).json({
           error: error.message,
         });

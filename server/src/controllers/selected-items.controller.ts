@@ -37,15 +37,62 @@ const parseOrderIds = (value: unknown): number[] => {
   return value;
 };
 
+const parseLimit = (value: unknown): number | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+    throw new HttpError(400, 'Limit must be a positive integer');
+  }
+
+  return Number(value);
+};
+
+const parseCursor = (value: unknown): string | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new HttpError(400, 'Cursor is invalid');
+  }
+
+  return value;
+};
+
+const parseSearch = (value: unknown): string | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== 'string') {
+    throw new HttpError(400, 'Search must be a string');
+  }
+
+  return value;
+};
+
 export class SelectedItemsController {
   constructor(private readonly dataRequestQueue: DataRequestQueue) {}
 
-  getItems = async (_request: Request, response: Response): Promise<void> => {
-    const items = await this.dataRequestQueue.enqueue(() => getSelectedItems());
+  getItems = async (
+    request: Request,
+    response: Response,
+  ): Promise<void> => {
+    const limit = parseLimit(request.query.limit);
+    const cursor = parseCursor(request.query.cursor);
+    const search = parseSearch(request.query.search);
 
-    response.status(200).json({
-      items,
-    });
+    const result = await this.dataRequestQueue.enqueue(() =>
+      getSelectedItems({
+        limit,
+        cursor,
+        search,
+      }),
+    );
+
+    response.status(200).json(result);
   };
 
   selectItem = async (request: Request, response: Response): Promise<void> => {

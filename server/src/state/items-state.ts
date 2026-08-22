@@ -4,6 +4,7 @@ export interface ItemsState {
 
   selectedIds: number[];
   selectedIdsSet: Set<number>;
+  selectedIdsVersion: number;
 }
 
 export const itemsState: ItemsState = {
@@ -12,4 +13,5 @@ export const itemsState: ItemsState = {
 
   selectedIds: [],
   selectedIdsSet: new Set<number>(),
+  selectedIdsVersion: 0,
 };
