@@ -70,7 +70,7 @@ export function AvailableItemsPanel() {
     const id = parseItemId(newItemId);
 
     if (id === null) {
-      setValidationError('Введите целое безопасное число');
+      setValidationError('Введите целое число');
       return;
     }
 
@@ -149,8 +149,16 @@ export function AvailableItemsPanel() {
             inputMode="numeric"
             value={newItemId}
             placeholder="Введите произвольный ID"
+            aria-invalid={validationError !== null}
+            aria-describedby={
+              validationError ? 'new-item-validation-error' : undefined
+            }
             onChange={(event) => {
               setNewItemId(event.target.value);
+
+              if (validationError) {
+                setValidationError(null);
+              }
             }}
           />
         </label>
@@ -160,21 +168,43 @@ export function AvailableItemsPanel() {
         </button>
       </form>
 
-      {validationError ? <p className="items-panel__error">{validationError}</p> : null}
+      {validationError ? (
+        <p
+          id="new-item-validation-error"
+          className="items-panel__error"
+          role="alert"
+        >
+          {validationError}
+        </p>
+      ) : null}
 
-      {createError ? <p className="items-panel__error">{createError}</p> : null}
+      {createError ? (
+        <p className="items-panel__error" role="alert">
+          {createError}
+        </p>
+      ) : null}
 
-      {selectError ? <p className="items-panel__error">{selectError}</p> : null}
+      {selectError ? (
+        <p className="items-panel__error" role="alert">
+          {selectError}
+        </p>
+      ) : null}
 
-      {listError ? <p className="items-panel__error">{listError}</p> : null}
+      {listError ? (
+        <p className="items-panel__error" role="alert">
+          {listError}
+        </p>
+      ) : null}
 
-      {isInitialLoading ? <p className="items-panel__status">Загрузка...</p> : null}
+      {isInitialLoading ? <p className="items-panel__status" role="status" aria-live="polite">
+        Загрузка...
+      </p> : null}
 
       {!isInitialLoading && items.length === 0 && !listError ? (
         <p className="items-panel__status">Элементы не найдены</p>
       ) : null}
 
-      <div className="items-panel__scroll" ref={scrollContainerRef}>
+      <div className="items-panel__scroll" ref={scrollContainerRef} aria-busy={listStatus === 'loading'}>
         <ul className="items-panel__list">
           {items.map((id) => (
             <li className="items-panel__item" key={id}>
@@ -195,7 +225,13 @@ export function AvailableItemsPanel() {
         </ul>
 
         {isLoadingMore ? (
-          <p className="items-panel__loading-more">Загрузка...</p>
+          <p
+            className="items-panel__loading-more"
+            role="status"
+            aria-live="polite"
+          >
+            Загрузка...
+          </p>
         ) : null}
 
         {hasMore && nextCursor ? (

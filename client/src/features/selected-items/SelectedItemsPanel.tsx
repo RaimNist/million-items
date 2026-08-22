@@ -190,25 +190,29 @@ export function SelectedItemsPanel() {
       </label>
 
       {listError ? (
-        <p className="items-panel__error">
+        <p className="items-panel__error" role="alert">
           {listError}
         </p>
       ) : null}
 
       {removeError ? (
-        <p className="items-panel__error">
+        <p className="items-panel__error" role="alert">
           {removeError}
         </p>
       ) : null}
 
       {reorderError ? (
-        <p className="items-panel__error">
+        <p className="items-panel__error" role="alert">
           {reorderError}
         </p>
       ) : null}
 
       {isInitialLoading ? (
-        <p className="items-panel__status">
+        <p
+          className="items-panel__status"
+          role="status"
+          aria-live="polite"
+        >
           Загрузка...
         </p>
       ) : null}
@@ -233,6 +237,7 @@ export function SelectedItemsPanel() {
         <div
           className="items-panel__scroll"
           ref={scrollContainerRef}
+          aria-busy={listStatus === 'loading'}
         >
           <SortableContext
             items={items}
@@ -253,7 +258,11 @@ export function SelectedItemsPanel() {
           </SortableContext>
 
           {isLoadingMore ? (
-            <p className="items-panel__loading-more">
+            <p
+              className="items-panel__loading-more"
+              role="status"
+              aria-live="polite"
+            >
               Загрузка...
             </p>
           ) : null}
