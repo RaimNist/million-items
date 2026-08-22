@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
+import { selectItem } from '../selected-items/selected-items.slice';
 import { createItem, fetchItems, setSearch } from './items.slice';
 
 import './available-items-panel.scss';
@@ -28,6 +29,8 @@ export function AvailableItemsPanel() {
 
   const { items, search, nextCursor, hasMore, listStatus, createStatus, listError, createError } =
     useAppSelector((state) => state.items);
+
+  const { selectStatus, selectError } = useAppSelector((state) => state.selectedItems);
 
   const [newItemId, setNewItemId] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -79,6 +82,20 @@ export function AvailableItemsPanel() {
     }
 
     setNewItemId('');
+
+    void dispatch(
+      fetchItems({
+        search,
+      }),
+    );
+  };
+
+  const handleSelectItem = async (id: number) => {
+    const result = await dispatch(selectItem(id));
+
+    if (!selectItem.fulfilled.match(result)) {
+      return;
+    }
 
     void dispatch(
       fetchItems({
@@ -140,6 +157,8 @@ export function AvailableItemsPanel() {
 
       {createError ? <p className="items-panel__error">{createError}</p> : null}
 
+      {selectError ? <p className="items-panel__error">{selectError}</p> : null}
+
       {listError ? <p className="items-panel__error">{listError}</p> : null}
 
       {isInitialLoading ? <p className="items-panel__status">Загрузка...</p> : null}
@@ -151,7 +170,18 @@ export function AvailableItemsPanel() {
       <ul className="items-panel__list">
         {items.map((id) => (
           <li className="items-panel__item" key={id}>
-            ID {id}
+            <span>ID {id}</span>
+
+            <button
+              className="items-panel__select"
+              type="button"
+              disabled={selectStatus === 'loading'}
+              onClick={() => {
+                void handleSelectItem(id);
+              }}
+            >
+              Выбрать
+            </button>
           </li>
         ))}
       </ul>
