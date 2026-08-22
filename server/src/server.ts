@@ -3,7 +3,7 @@ import { CreateItemQueue } from './queues/create-item-queue.js';
 import { DataRequestQueue } from './queues/data-request-queue.js';
 
 const DEFAULT_PORT = 3000;
-const HOST = '127.0.0.1';
+const HOST = '0.0.0.0';
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 const resolvePort = (value: string | undefined): number => {
