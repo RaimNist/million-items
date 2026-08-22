@@ -1,3 +1,4 @@
+import path from 'node:path';
 import express from 'express';
 
 import { ItemsController } from './controllers/items.controller.js';
@@ -30,6 +31,25 @@ export const createApp = ({ dataRequestQueue, createItemQueue }: AppDependencies
 
   app.use('/api/items', createItemsRouter(itemsController));
   app.use('/api/selected-items', createSelectedItemsRouter(selectedItemsController));
+  
+  if (process.env.NODE_ENV === 'production') {
+    const clientDistPath = path.resolve(__dirname, '../../client/dist');
+
+    app.use(express.static(clientDistPath));
+
+    app.get('/{*path}', (request, response, next) => {
+      if (request.path === '/api' || request.path.startsWith('/api/')) {
+        next();
+        return;
+      }
+
+      response.sendFile(path.join(clientDistPath, 'index.html'), (error) => {
+        if (error) {
+          next(error);
+        }
+      });
+    });
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);
