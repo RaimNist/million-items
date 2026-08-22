@@ -1,8 +1,9 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { selectItem } from '../selected-items/selected-items.slice';
 import { createItem, fetchItems, setSearch } from './items.slice';
+import { useInfiniteScroll } from '../../shared/hooks/useInfiniteScroll';
 
 import './available-items-panel.scss';
 
@@ -49,7 +50,7 @@ export function AvailableItemsPanel() {
     };
   }, [dispatch, search]);
 
-  const handleLoadMore = () => {
+  const handleLoadMore = useCallback(() => {
     if (!nextCursor || !hasMore || listStatus === 'loading') {
       return;
     }
@@ -61,7 +62,7 @@ export function AvailableItemsPanel() {
         append: true,
       }),
     );
-  };
+  }, [dispatch, hasMore, listStatus, nextCursor, search]);
 
   const handleCreateItem = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -107,6 +108,12 @@ export function AvailableItemsPanel() {
   const isInitialLoading = listStatus === 'loading' && items.length === 0;
 
   const isLoadingMore = listStatus === 'loading' && items.length > 0;
+
+  const { scrollContainerRef, loadMoreRef } = useInfiniteScroll({
+    hasMore: hasMore && nextCursor !== null,
+    isLoading: listStatus === 'loading',
+    onLoadMore: handleLoadMore,
+  });
 
   return (
     <section className="items-panel">
@@ -167,35 +174,38 @@ export function AvailableItemsPanel() {
         <p className="items-panel__status">Элементы не найдены</p>
       ) : null}
 
-      <ul className="items-panel__list">
-        {items.map((id) => (
-          <li className="items-panel__item" key={id}>
-            <span>ID {id}</span>
+      <div className="items-panel__scroll" ref={scrollContainerRef}>
+        <ul className="items-panel__list">
+          {items.map((id) => (
+            <li className="items-panel__item" key={id}>
+              <span>ID {id}</span>
 
-            <button
-              className="items-panel__select"
-              type="button"
-              disabled={selectStatus === 'loading'}
-              onClick={() => {
-                void handleSelectItem(id);
-              }}
-            >
-              Выбрать
-            </button>
-          </li>
-        ))}
-      </ul>
+              <button
+                className="items-panel__select"
+                type="button"
+                disabled={selectStatus === 'loading'}
+                onClick={() => {
+                  void handleSelectItem(id);
+                }}
+              >
+                Выбрать
+              </button>
+            </li>
+          ))}
+        </ul>
 
-      {hasMore && items.length > 0 ? (
-        <button
-          className="items-panel__load-more"
-          type="button"
-          disabled={isLoadingMore}
-          onClick={handleLoadMore}
-        >
-          {isLoadingMore ? 'Загрузка...' : 'Загрузить ещё'}
-        </button>
-      ) : null}
+        {isLoadingMore ? (
+          <p className="items-panel__loading-more">Загрузка...</p>
+        ) : null}
+
+        {hasMore && nextCursor ? (
+          <div
+            className="items-panel__sentinel"
+            ref={loadMoreRef}
+            aria-hidden="true"
+          />
+        ) : null}
+      </div>
     </section>
   );
 }

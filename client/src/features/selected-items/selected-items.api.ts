@@ -1,4 +1,9 @@
-import type { SelectedItemResponse, SelectedItemsResponse } from './selected-items.types';
+import type {
+  GetSelectedItemsParams,
+  SelectedItemResponse,
+  SelectedItemsPage,
+  SelectedItemsResponse,
+} from './selected-items.types';
 
 interface ErrorResponse {
   error?: string;
@@ -18,8 +23,25 @@ const getErrorMessage = async (response: Response): Promise<string> => {
   return `Request failed with status ${response.status}`;
 };
 
-export const getSelectedItems = async (signal?: AbortSignal): Promise<SelectedItemsResponse> => {
-  const response = await fetch('/api/selected-items', {
+export const getSelectedItems = async (
+  params: GetSelectedItemsParams,
+  signal?: AbortSignal,
+): Promise<SelectedItemsPage> => {
+  const searchParams = new URLSearchParams();
+
+  if (params.limit !== undefined) {
+    searchParams.set('limit', String(params.limit));
+  }
+
+  if (params.search) {
+    searchParams.set('search', params.search);
+  }
+
+  if (params.cursor) {
+    searchParams.set('cursor', params.cursor);
+  }
+
+  const response = await fetch(`/api/selected-items?${searchParams.toString()}`, {
     signal,
   });
 
@@ -27,7 +49,7 @@ export const getSelectedItems = async (signal?: AbortSignal): Promise<SelectedIt
     throw new Error(await getErrorMessage(response));
   }
 
-  return (await response.json()) as SelectedItemsResponse;
+  return (await response.json()) as SelectedItemsPage;
 };
 
 export const selectItem = async (

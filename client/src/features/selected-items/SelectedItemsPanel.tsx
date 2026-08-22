@@ -13,10 +13,12 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
+import { useInfiniteScroll } from '../../shared/hooks/useInfiniteScroll';
 import { fetchItems } from '../items/items.slice';
+import { SortableSelectedItem } from './SortableSelectedItem';
 import {
   applySelectedItemsOrder,
   fetchSelectedItems,
@@ -24,18 +26,24 @@ import {
   reorderSelectedItems,
   setSelectedItemsSearch,
 } from './selected-items.slice';
-import { SortableSelectedItem } from './SortableSelectedItem';
 
 import './selected-items-panel.scss';
+
+const SEARCH_DELAY_MS = 300;
 
 export function SelectedItemsPanel() {
   const dispatch = useAppDispatch();
 
-  const { search: availableItemsSearch } = useAppSelector((state) => state.items);
+  const { search: availableItemsSearch } = useAppSelector(
+    (state) => state.items,
+  );
 
   const {
     items,
     search,
+    nextCursor,
+    hasMore,
+    totalCount,
     listStatus,
     removeStatus,
     reorderStatus,
@@ -56,12 +64,32 @@ export function SelectedItemsPanel() {
   );
 
   useEffect(() => {
-    if (listStatus === 'idle') {
-      void dispatch(fetchSelectedItems());
-    }
-  }, [dispatch, listStatus]);
+    const timeoutId = window.setTimeout(() => {
+      void dispatch(
+        fetchSelectedItems({
+          search,
+        }),
+      );
+    }, SEARCH_DELAY_MS);
 
-  const filteredItems = items.filter((id) => String(id).startsWith(search));
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [dispatch, search]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!nextCursor || !hasMore || listStatus === 'loading') {
+      return;
+    }
+
+    void dispatch(
+      fetchSelectedItems({
+        search,
+        cursor: nextCursor,
+        append: true,
+      }),
+    );
+  }, [dispatch, hasMore, listStatus, nextCursor, search]);
 
   const handleRemoveItem = async (id: number) => {
     const result = await dispatch(removeSelectedItem(id));
@@ -69,6 +97,12 @@ export function SelectedItemsPanel() {
     if (!removeSelectedItem.fulfilled.match(result)) {
       return;
     }
+
+    void dispatch(
+      fetchSelectedItems({
+        search,
+      }),
+    );
 
     void dispatch(
       fetchItems({
@@ -85,42 +119,62 @@ export function SelectedItemsPanel() {
     const activeId = Number(active.id);
     const overId = Number(over.id);
 
-    const oldIndex = filteredItems.indexOf(activeId);
-    const newIndex = filteredItems.indexOf(overId);
+    const oldIndex = items.indexOf(activeId);
+    const newIndex = items.indexOf(overId);
 
     if (oldIndex === -1 || newIndex === -1) {
       return;
     }
 
     const previousItems = [...items];
+    const reorderedItems = arrayMove(items, oldIndex, newIndex);
 
-    const reorderedVisibleItems = arrayMove(filteredItems, oldIndex, newIndex);
+    dispatch(applySelectedItemsOrder(reorderedItems));
 
-    dispatch(applySelectedItemsOrder(reorderedVisibleItems));
-
-    const result = await dispatch(reorderSelectedItems(reorderedVisibleItems));
+    const result = await dispatch(
+      reorderSelectedItems(reorderedItems),
+    );
 
     if (!reorderSelectedItems.fulfilled.match(result)) {
       dispatch(applySelectedItemsOrder(previousItems));
     }
   };
 
-  const isInitialLoading = listStatus === 'loading' && items.length === 0;
+  const isInitialLoading =
+    listStatus === 'loading' && items.length === 0;
 
-  const isChanging = removeStatus === 'loading' || reorderStatus === 'loading';
+  const isLoadingMore =
+    listStatus === 'loading' && items.length > 0;
+
+  const isChanging =
+    removeStatus === 'loading' ||
+    reorderStatus === 'loading';
+
+  const { scrollContainerRef, loadMoreRef } =
+    useInfiniteScroll({
+      hasMore: hasMore && nextCursor !== null,
+      isLoading: listStatus === 'loading',
+      onLoadMore: handleLoadMore,
+    });
 
   return (
     <section className="items-panel selected-items-panel">
       <div className="items-panel__header">
         <div>
-          <h2 className="items-panel__title">Выбранные элементы</h2>
+          <h2 className="items-panel__title">
+            Выбранные элементы
+          </h2>
 
-          <p className="items-panel__description">Выбрано: {items.length}</p>
+          <p className="items-panel__description">
+            Выбрано: {totalCount}
+          </p>
         </div>
       </div>
 
       <label className="items-panel__field">
-        <span className="items-panel__label">Фильтр по ID</span>
+        <span className="items-panel__label">
+          Фильтр по ID
+        </span>
 
         <input
           className="items-panel__input"
@@ -128,22 +182,44 @@ export function SelectedItemsPanel() {
           value={search}
           placeholder="Например, 123"
           onChange={(event) => {
-            dispatch(setSelectedItemsSearch(event.target.value));
+            dispatch(
+              setSelectedItemsSearch(event.target.value),
+            );
           }}
         />
       </label>
 
-      {listError ? <p className="items-panel__error">{listError}</p> : null}
+      {listError ? (
+        <p className="items-panel__error">
+          {listError}
+        </p>
+      ) : null}
 
-      {removeError ? <p className="items-panel__error">{removeError}</p> : null}
+      {removeError ? (
+        <p className="items-panel__error">
+          {removeError}
+        </p>
+      ) : null}
 
-      {reorderError ? <p className="items-panel__error">{reorderError}</p> : null}
+      {reorderError ? (
+        <p className="items-panel__error">
+          {reorderError}
+        </p>
+      ) : null}
 
-      {isInitialLoading ? <p className="items-panel__status">Загрузка...</p> : null}
-
-      {!isInitialLoading && filteredItems.length === 0 && !listError ? (
+      {isInitialLoading ? (
         <p className="items-panel__status">
-          {items.length === 0 ? 'Выбранных элементов пока нет' : 'Элементы не найдены'}
+          Загрузка...
+        </p>
+      ) : null}
+
+      {!isInitialLoading &&
+      items.length === 0 &&
+      !listError ? (
+        <p className="items-panel__status">
+          {totalCount === 0 && search === ''
+            ? 'Выбранных элементов пока нет'
+            : 'Элементы не найдены'}
         </p>
       ) : null}
 
@@ -154,20 +230,42 @@ export function SelectedItemsPanel() {
           void handleDragEnd(event);
         }}
       >
-        <SortableContext items={filteredItems} strategy={verticalListSortingStrategy}>
-          <ul className="items-panel__list">
-            {filteredItems.map((id) => (
-              <SortableSelectedItem
-                key={id}
-                id={id}
-                disabled={isChanging}
-                onRemove={(itemId) => {
-                  void handleRemoveItem(itemId);
-                }}
-              />
-            ))}
-          </ul>
-        </SortableContext>
+        <div
+          className="items-panel__scroll"
+          ref={scrollContainerRef}
+        >
+          <SortableContext
+            items={items}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className="items-panel__list">
+              {items.map((id) => (
+                <SortableSelectedItem
+                  key={id}
+                  id={id}
+                  disabled={isChanging}
+                  onRemove={(itemId) => {
+                    void handleRemoveItem(itemId);
+                  }}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+
+          {isLoadingMore ? (
+            <p className="items-panel__loading-more">
+              Загрузка...
+            </p>
+          ) : null}
+
+          {hasMore && nextCursor ? (
+            <div
+              className="items-panel__sentinel"
+              ref={loadMoreRef}
+              aria-hidden="true"
+            />
+          ) : null}
+        </div>
       </DndContext>
     </section>
   );

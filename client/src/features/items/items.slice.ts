@@ -88,6 +88,8 @@ const itemsSlice = createSlice({
   reducers: {
     setSearch: (state, action: PayloadAction<string>) => {
       state.search = action.payload;
+      state.nextCursor = null;
+      state.hasMore = false;
     },
   },
   extraReducers: (builder) => {

@@ -6,13 +6,24 @@ import {
   reorderSelectedItems as reorderSelectedItemsRequest,
   selectItem as selectItemRequest,
 } from './selected-items.api';
-import type { SelectedItemsResponse } from './selected-items.types';
+import type { SelectedItemsPage } from './selected-items.types';
+
+const PAGE_LIMIT = 20;
 
 type RequestStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
+
+interface FetchSelectedItemsArgs {
+  search: string;
+  cursor?: string | null;
+  append?: boolean;
+}
 
 interface SelectedItemsState {
   items: number[];
   search: string;
+  nextCursor: string | null;
+  hasMore: boolean;
+  totalCount: number;
 
   listStatus: RequestStatus;
   selectStatus: RequestStatus;
@@ -23,11 +34,16 @@ interface SelectedItemsState {
   selectError: string | null;
   removeError: string | null;
   reorderError: string | null;
+
+  activeListRequestId: string | null;
 }
 
 const initialState: SelectedItemsState = {
   items: [],
   search: '',
+  nextCursor: null,
+  hasMore: true,
+  totalCount: 0,
 
   listStatus: 'idle',
   selectStatus: 'idle',
@@ -38,6 +54,8 @@ const initialState: SelectedItemsState = {
   selectError: null,
   removeError: null,
   reorderError: null,
+
+  activeListRequestId: null,
 };
 
 const getRequestError = (error: unknown): string => {
@@ -48,17 +66,31 @@ const getRequestError = (error: unknown): string => {
   return 'Unknown request error';
 };
 
+const matchesSearch = (id: number, search: string): boolean => {
+  return search === '' || String(id).startsWith(search);
+};
+
 export const fetchSelectedItems = createAsyncThunk<
-  SelectedItemsResponse,
-  void,
+  SelectedItemsPage,
+  FetchSelectedItemsArgs,
   { rejectValue: string }
->('selectedItems/fetchSelectedItems', async (_, { rejectWithValue, signal }) => {
-  try {
-    return await getSelectedItems(signal);
-  } catch (error) {
-    return rejectWithValue(getRequestError(error));
-  }
-});
+>(
+  'selectedItems/fetchSelectedItems',
+  async ({ search, cursor }, { rejectWithValue, signal }) => {
+    try {
+      return await getSelectedItems(
+        {
+          search,
+          cursor,
+          limit: PAGE_LIMIT,
+        },
+        signal,
+      );
+    } catch (error) {
+      return rejectWithValue(getRequestError(error));
+    }
+  },
+);
 
 export const selectItem = createAsyncThunk<number, number, { rejectValue: string }>(
   'selectedItems/selectItem',
@@ -105,6 +137,8 @@ const selectedItemsSlice = createSlice({
   reducers: {
     setSelectedItemsSearch: (state, action: PayloadAction<string>) => {
       state.search = action.payload;
+      state.nextCursor = null;
+      state.hasMore = false;
     },
 
     applySelectedItemsOrder: (state, action: PayloadAction<number[]>) => {
@@ -133,27 +167,61 @@ const selectedItemsSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
-      .addCase(fetchSelectedItems.pending, (state) => {
+      .addCase(fetchSelectedItems.pending, (state, action) => {
         state.listStatus = 'loading';
         state.listError = null;
+        state.activeListRequestId = action.meta.requestId;
+
+        if (!action.meta.arg.append) {
+          state.items = [];
+          state.nextCursor = null;
+          state.hasMore = true;
+        }
       })
+
       .addCase(fetchSelectedItems.fulfilled, (state, action) => {
-        state.items = action.payload.items;
+        if (state.activeListRequestId !== action.meta.requestId) {
+          return;
+        }
+
+        if (action.meta.arg.append) {
+          state.items.push(...action.payload.items);
+        } else {
+          state.items = action.payload.items;
+        }
+
+        state.nextCursor = action.payload.nextCursor;
+        state.hasMore = action.payload.hasMore;
+        state.totalCount = action.payload.totalCount;
+
         state.listStatus = 'succeeded';
+        state.activeListRequestId = null;
       })
+
       .addCase(fetchSelectedItems.rejected, (state, action) => {
+        if (state.activeListRequestId !== action.meta.requestId) {
+          return;
+        }
+
         state.listStatus = 'failed';
         state.listError = action.payload ?? 'Failed to load selected items';
+        state.activeListRequestId = null;
       })
 
       .addCase(selectItem.pending, (state) => {
         state.selectStatus = 'loading';
         state.selectError = null;
       })
+
       .addCase(selectItem.fulfilled, (state, action) => {
-        state.items.push(action.payload);
         state.selectStatus = 'succeeded';
+        state.totalCount += 1;
+
+        if (!state.hasMore && matchesSearch(action.payload, state.search)) {
+          state.items.push(action.payload);
+        }
       })
+
       .addCase(selectItem.rejected, (state, action) => {
         state.selectStatus = 'failed';
         state.selectError = action.payload ?? 'Failed to select item';
@@ -163,10 +231,13 @@ const selectedItemsSlice = createSlice({
         state.removeStatus = 'loading';
         state.removeError = null;
       })
+
       .addCase(removeSelectedItem.fulfilled, (state, action) => {
         state.items = state.items.filter((id) => id !== action.payload);
+        state.totalCount = Math.max(0, state.totalCount - 1);
         state.removeStatus = 'succeeded';
       })
+
       .addCase(removeSelectedItem.rejected, (state, action) => {
         state.removeStatus = 'failed';
         state.removeError = action.payload ?? 'Failed to remove selected item';
@@ -176,10 +247,11 @@ const selectedItemsSlice = createSlice({
         state.reorderStatus = 'loading';
         state.reorderError = null;
       })
-      .addCase(reorderSelectedItems.fulfilled, (state, action) => {
-        state.items = action.payload;
+
+      .addCase(reorderSelectedItems.fulfilled, (state) => {
         state.reorderStatus = 'succeeded';
       })
+
       .addCase(reorderSelectedItems.rejected, (state, action) => {
         state.reorderStatus = 'failed';
         state.reorderError = action.payload ?? 'Failed to reorder selected items';
