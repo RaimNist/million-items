@@ -1,8 +1,6 @@
 export const DATA_REQUEST_FLUSH_INTERVAL_MS = 1_000;
 
-export type DataRequestDedupeKey =
-  | `select-item:${number}`
-  | `remove-selected-item:${number}`;
+export type DataRequestDedupeKey = `select-item:${number}` | `remove-selected-item:${number}`;
 
 type QueueTask<T> = () => T | Promise<T>;
 
@@ -30,10 +28,7 @@ export class DataRequestQueue {
     }, intervalMs);
   }
 
-  enqueue<T>(
-    task: QueueTask<T>,
-    dedupeKey?: DataRequestDedupeKey,
-  ): Promise<T> {
+  enqueue<T>(task: QueueTask<T>, dedupeKey?: DataRequestDedupeKey): Promise<T> {
     if (!this.isAccepting) {
       return Promise.reject(new Error('Data request queue is stopped'));
     }
@@ -90,10 +85,7 @@ export class DataRequestQueue {
       return Promise.resolve();
     }
 
-    const batch = this.pendingRequests.splice(
-      0,
-      this.pendingRequests.length,
-    );
+    const batch = this.pendingRequests.splice(0, this.pendingRequests.length);
 
     this.activeFlush = this.processBatch(batch);
 

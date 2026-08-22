@@ -77,10 +77,7 @@ export class CreateItemQueue {
       return Promise.resolve();
     }
 
-    const batch = this.pendingRequests.splice(
-      0,
-      this.pendingRequests.length,
-    );
+    const batch = this.pendingRequests.splice(0, this.pendingRequests.length);
 
     this.activeFlush = this.processBatch(batch);
 
@@ -101,9 +98,7 @@ export class CreateItemQueue {
     }
   }
 
-  private async processBatch(
-    batch: PendingCreateRequest[],
-  ): Promise<void> {
+  private async processBatch(batch: PendingCreateRequest[]): Promise<void> {
     try {
       for (const request of batch) {
         await request.execute();

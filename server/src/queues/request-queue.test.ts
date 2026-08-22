@@ -37,21 +37,15 @@ test('data queue deduplicates consecutive equal operations', async () => {
 
   let executionCount = 0;
 
-  const first = queue.enqueue(
-    () => {
-      executionCount += 1;
-      return 42;
-    },
-    'select-item:42',
-  );
+  const first = queue.enqueue(() => {
+    executionCount += 1;
+    return 42;
+  }, 'select-item:42');
 
-  const duplicate = queue.enqueue(
-    () => {
-      executionCount += 1;
-      return 42;
-    },
-    'select-item:42',
-  );
+  const duplicate = queue.enqueue(() => {
+    executionCount += 1;
+    return 42;
+  }, 'select-item:42');
 
   assert.strictEqual(first, duplicate);
 
@@ -69,34 +63,21 @@ test('data queue preserves select remove select sequence', async () => {
 
   const operations: string[] = [];
 
-  queue.enqueue(
-    () => {
-      operations.push('select');
-    },
-    'select-item:42',
-  );
+  queue.enqueue(() => {
+    operations.push('select');
+  }, 'select-item:42');
 
-  queue.enqueue(
-    () => {
-      operations.push('remove');
-    },
-    'remove-selected-item:42',
-  );
+  queue.enqueue(() => {
+    operations.push('remove');
+  }, 'remove-selected-item:42');
 
-  queue.enqueue(
-    () => {
-      operations.push('select');
-    },
-    'select-item:42',
-  );
+  queue.enqueue(() => {
+    operations.push('select');
+  }, 'select-item:42');
 
   await queue.flush();
 
-  assert.deepEqual(operations, [
-    'select',
-    'remove',
-    'select',
-  ]);
+  assert.deepEqual(operations, ['select', 'remove', 'select']);
 
   await queue.shutdown();
 });
@@ -140,10 +121,7 @@ test('queue continues processing after an operation error', async () => {
     throw new Error('Test error');
   });
 
-  const failedAssertion = assert.rejects(
-    failedRequest,
-    /Test error/,
-  );
+  const failedAssertion = assert.rejects(failedRequest, /Test error/);
 
   const successfulRequest = queue.enqueue(() => 100);
 

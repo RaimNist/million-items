@@ -12,10 +12,7 @@ export const app = express();
 const dataRequestQueue = new DataRequestQueue();
 const createItemQueue = new CreateItemQueue();
 
-const itemsController = new ItemsController(
-  dataRequestQueue,
-  createItemQueue,
-);
+const itemsController = new ItemsController(dataRequestQueue, createItemQueue);
 
 app.use(express.json());
 
@@ -25,10 +22,7 @@ app.get('/health', (_request, response) => {
   });
 });
 
-app.use(
-  '/api/items',
-  createItemsRouter(itemsController),
-);
+app.use('/api/items', createItemsRouter(itemsController));
 
 app.use(notFoundHandler);
 app.use(errorHandler);
